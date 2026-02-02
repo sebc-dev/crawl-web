@@ -1,0 +1,62 @@
+name: "MDN Web Animations API"
+base_url: "https://developer.mozilla.org"
+language: "en-US"
+
+seed_urls:
+  # Main overview and guides
+  - "/en-US/docs/Web/API/Web_Animations_API"
+  # Core interfaces (to discover their properties/methods)
+  - "/en-US/docs/Web/API/Animation"
+  - "/en-US/docs/Web/API/KeyframeEffect"
+  - "/en-US/docs/Web/API/AnimationEffect"
+  # Timeline interfaces
+  - "/en-US/docs/Web/API/AnimationTimeline"
+  - "/en-US/docs/Web/API/DocumentTimeline"
+  - "/en-US/docs/Web/API/ScrollTimeline"
+  - "/en-US/docs/Web/API/ViewTimeline"
+  # Event interfaces
+  - "/en-US/docs/Web/API/AnimationEvent"
+  - "/en-US/docs/Web/API/AnimationPlaybackEvent"
+
+include_patterns:
+  # Main API overview and guides
+  - "/en-US/docs/Web/API/Web_Animations_API($|/)"
+  # Core interfaces
+  - "/en-US/docs/Web/API/Animation($|/)"
+  - "/en-US/docs/Web/API/KeyframeEffect($|/)"
+  - "/en-US/docs/Web/API/AnimationEffect($|/)"
+  # Timeline interfaces
+  - "/en-US/docs/Web/API/AnimationTimeline($|/)"
+  - "/en-US/docs/Web/API/DocumentTimeline($|/)"
+  - "/en-US/docs/Web/API/ScrollTimeline($|/)"
+  - "/en-US/docs/Web/API/ViewTimeline($|/)"
+  # Event interfaces
+  - "/en-US/docs/Web/API/AnimationEvent($|/)"
+  - "/en-US/docs/Web/API/AnimationPlaybackEvent($|/)"
+  # Document and Element methods
+  - "/en-US/docs/Web/API/Document/timeline$"
+  - "/en-US/docs/Web/API/Document/getAnimations$"
+  - "/en-US/docs/Web/API/Element/animate$"
+  - "/en-US/docs/Web/API/Element/getAnimations$"
+
+exclude_patterns:
+  - "contributors\\.txt$"
+
+crawler:
+  max_concurrent: 5
+  page_timeout: 30000
+  excluded_tags:
+    - nav
+    - footer
+    - aside
+    - header
+    - script
+    - style
+
+output:
+  structure: "hierarchical"
+  frontmatter: true
+  title_suffix_pattern: "\\s*[-|].*MDN.*$"
+
+cleaner:
+  module: "cleaner"
