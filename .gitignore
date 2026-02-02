@@ -31,9 +31,8 @@ ENV/
 *.swp
 *.swo
 
-# Crawl outputs and state
-sources/**/output/
-sources/**/.crawl-state.json
+# Sources (user-specific crawl configurations)
+sources/
 
 # OS
 .DS_Store
