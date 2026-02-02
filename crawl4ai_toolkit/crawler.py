@@ -22,6 +22,7 @@ async def discover_urls(
     excluded_tags: Optional[List[str]] = None,
     normalize_url: Optional[Callable[[str, str], str]] = None,
     exclude_patterns: Optional[List[str]] = None,
+    depth: int = 1,
 ) -> Set[str]:
     """
     Discover URLs by crawling seed pages and extracting internal links.
@@ -36,6 +37,7 @@ async def discover_urls(
         excluded_tags: HTML tags to exclude from content
         normalize_url: Optional function to normalize URLs (receives url, language)
         exclude_patterns: Regex patterns to exclude URLs (applied after include)
+        depth: How many levels deep to crawl for discovery (1 = seeds only, 2+ = recursive)
 
     Returns:
         Set of discovered URLs matching the include patterns
@@ -43,9 +45,10 @@ async def discover_urls(
     if excluded_tags is None:
         excluded_tags = ["nav", "footer", "aside", "header"]
 
-    print(f"Phase 1: Discovering URLs from {len(seed_urls)} seed URLs...")
+    print(f"Phase 1: Discovering URLs (depth={depth})...")
 
     discovered: Set[str] = set()
+    crawled: Set[str] = set()  # Track already crawled URLs to avoid duplicates
 
     browser_config = BrowserConfig(
         headless=True,
@@ -61,7 +64,32 @@ async def discover_urls(
         page_timeout=page_timeout,
     )
 
+    def extract_urls_from_result(result, label: str) -> Set[str]:
+        """Extract matching URLs from a crawl result."""
+        urls = set()
+        if result.success:
+            discovered.add(result.url)
+            crawled.add(result.url)
+            print(f"  {label}: {result.url}")
+
+            internal_links = result.links.get('internal', [])
+            for link_info in internal_links:
+                href = link_info.get('href', '') if isinstance(link_info, dict) else str(link_info)
+
+                if href.startswith('/'):
+                    href = f"{base_url}{href}"
+
+                if _url_matches_patterns(href, include_patterns):
+                    if exclude_patterns and _url_matches_patterns(href, exclude_patterns):
+                        continue
+                    if normalize_url:
+                        href = normalize_url(href, language)
+                    urls.add(href)
+        return urls
+
     async with AsyncWebCrawler(config=browser_config) as crawler:
+        # Level 0: Crawl seed URLs
+        print(f"  Crawling {len(seed_urls)} seed URLs...")
         results = await crawler.arun_many(
             urls=seed_urls,
             config=crawler_config,
@@ -69,29 +97,35 @@ async def discover_urls(
         )
 
         for result in results:
-            if result.success:
-                discovered.add(result.url)
-                print(f"  Seed: {result.url}")
+            new_urls = extract_urls_from_result(result, "Seed")
+            discovered.update(new_urls)
 
-                # Extract internal links
-                internal_links = result.links.get('internal', [])
-                for link_info in internal_links:
-                    href = link_info.get('href', '') if isinstance(link_info, dict) else str(link_info)
+        # Levels 1 to depth-1: Crawl discovered URLs recursively
+        for level in range(1, depth):
+            # Find URLs that haven't been crawled yet
+            urls_to_crawl = [url for url in discovered if url not in crawled]
+            if not urls_to_crawl:
+                print(f"  Level {level + 1}: No new URLs to crawl")
+                break
 
-                    # Make absolute URL
-                    if href.startswith('/'):
-                        href = f"{base_url}{href}"
+            print(f"  Level {level + 1}: Crawling {len(urls_to_crawl)} new URLs...")
+            results = await crawler.arun_many(
+                urls=urls_to_crawl,
+                config=crawler_config,
+                max_concurrent=max_concurrent
+            )
 
-                    # Check if matches any include pattern and not excluded
-                    if _url_matches_patterns(href, include_patterns):
-                        if exclude_patterns and _url_matches_patterns(href, exclude_patterns):
-                            continue  # Skip excluded URLs
-                        # Normalize URL if function provided
-                        if normalize_url:
-                            href = normalize_url(href, language)
-                        discovered.add(href)
+            new_count = 0
+            for result in results:
+                new_urls = extract_urls_from_result(result, f"L{level + 1}")
+                for url in new_urls:
+                    if url not in discovered:
+                        new_count += 1
+                        discovered.add(url)
 
-    print(f"  Discovered {len(discovered)} URLs")
+            print(f"  Level {level + 1}: Found {new_count} new URLs")
+
+    print(f"  Total discovered: {len(discovered)} URLs")
     return discovered
 
 

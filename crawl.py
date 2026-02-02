@@ -182,6 +182,7 @@ async def check_remote(
     concurrent = max_concurrent or crawler_config.get('max_concurrent', 5)
     page_timeout = crawler_config.get('page_timeout', 30000)
     excluded_tags = crawler_config.get('excluded_tags', [])
+    discovery_depth = crawler_config.get('discovery_depth', 1)
 
     print(f"Checking remote changes for {config.get('name', source_name)}...")
     print(f"Last crawl: {state.get_last_crawl()}")
@@ -211,6 +212,7 @@ async def check_remote(
         excluded_tags=excluded_tags,
         normalize_url=normalize_url,
         exclude_patterns=config.get('exclude_patterns'),
+        depth=discovery_depth,
     )
 
     # Add known pages
@@ -313,6 +315,7 @@ async def run_crawl(
     concurrent = max_concurrent or crawler_config.get('max_concurrent', 5)
     page_timeout = crawler_config.get('page_timeout', 30000)
     excluded_tags = crawler_config.get('excluded_tags', [])
+    discovery_depth = crawler_config.get('discovery_depth', 1)
 
     print(f"Base URL: {base_url}")
     print(f"Language: {lang}")
@@ -350,6 +353,7 @@ async def run_crawl(
             excluded_tags=excluded_tags,
             normalize_url=normalize_url,
             exclude_patterns=config.get('exclude_patterns'),
+            depth=discovery_depth,
         )
 
         # Add known pages
