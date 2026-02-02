@@ -4,28 +4,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a documentation crawling toolkit that converts web documentation (like MDN) into organized markdown files. It uses Crawl4AI for web scraping and provides a modular architecture for crawling different documentation sources.
+This is a documentation crawling toolkit designed for use with Claude Code. It converts web documentation (like MDN) into organized markdown files using Crawl4AI and provides slash commands and specialized agents for AI-assisted workflows.
 
-## Commands
+## Slash Commands
 
-### Run a crawl
+Use these commands to interact with the toolkit:
+
+| Command | Description |
+|---------|-------------|
+| `/crawl:analyze-urls` | Analyze a documentation URL to discover and categorize pages |
+| `/crawl:create-source` | Create a new documentation source with config and cleaner |
+| `/crawl:run` | Run a crawl for a configured source |
+| `/crawl:clean-docs` | Analyze and clean crawled documentation quality |
+| `/crawl:check-updates` | Check if documentation sources need updates |
+
+## Agents
+
+Specialized agents are invoked by the commands:
+
+| Agent | Purpose |
+|-------|---------|
+| `url-analyzer` | Crawls URLs and categorizes pages (API reference, guides, examples) |
+| `cleaning-analyzer` | Identifies noise patterns in crawled markdown files |
+| `cleaning-implementer` | Implements Python cleaning methods from analysis reports |
+
+## Direct CLI Commands
+
+For debugging or direct usage:
+
 ```bash
-.venv/bin/python3 crawl.py <source-name>                    # Full crawl
-.venv/bin/python3 crawl.py <source-name> --discover-only    # List URLs only (no crawl)
-.venv/bin/python3 crawl.py <source-name> --skip-discovery   # Use known URLs only
-.venv/bin/python3 crawl.py <source-name> --language fr      # Different language
-.venv/bin/python3 crawl.py <source-name> -c 10              # Custom concurrency
-```
-
-### Check for changes
-```bash
-.venv/bin/python3 crawl.py <source-name> --check            # Check local files for modifications
-.venv/bin/python3 crawl.py <source-name> --check-remote     # Re-crawl and check for remote changes
-```
-
-### List available sources
-```bash
+# List available sources
 .venv/bin/python3 crawl.py --list
+
+# Full crawl
+.venv/bin/python3 crawl.py <source-name>
+
+# Discover URLs only (no crawl)
+.venv/bin/python3 crawl.py <source-name> --discover-only
+
+# Use known URLs only (skip discovery)
+.venv/bin/python3 crawl.py <source-name> --skip-discovery
+
+# Different language
+.venv/bin/python3 crawl.py <source-name> --language fr
+
+# Custom concurrency
+.venv/bin/python3 crawl.py <source-name> -c 10
+
+# Check local files for modifications
+.venv/bin/python3 crawl.py <source-name> --check
+
+# Re-crawl and check for remote changes
+.venv/bin/python3 crawl.py <source-name> --check-remote
 ```
 
 ### Run tests (for the crawl4ai skill)
@@ -44,15 +74,15 @@ This is a documentation crawling toolkit that converts web documentation (like M
 4. Generates markdown files with frontmatter
 5. Saves crawl state for change detection
 
-**crawl4ai_toolkit/** - Reusable library with four modules:
-- `crawler.py` - URL discovery (`discover_urls`) and page crawling (`crawl_pages`) using Crawl4AI's `AsyncWebCrawler`
+**crawl4ai_toolkit/** - Reusable library:
+- `crawler.py` - URL discovery (`discover_urls`) and page crawling (`crawl_pages`)
 - `generator.py` - Markdown file generation with frontmatter and index creation
 - `cleaner.py` - Base `CleanerBase` class for markdown content cleaning
-- `state.py` - `CrawlState` class for tracking crawl history and detecting changes via content hashes or HTTP headers
+- `state.py` - `CrawlState` class for tracking crawl history and detecting changes
 
 ### Adding a New Documentation Source
 
-Create a directory under `sources/` with:
+Use `/crawl:create-source` or manually create a directory under `sources/` with:
 
 1. **config.yaml** - Required configuration:
 ```yaml
@@ -72,7 +102,7 @@ output:
   structure: "hierarchical"
   frontmatter: true
 cleaner:
-  module: "cleaner"  # Optional: custom cleaner module
+  module: "cleaner"
 ```
 
 2. **cleaner.py** (optional) - Custom markdown cleaner extending `CleanerBase`:
@@ -86,18 +116,13 @@ class MyCleaner(CleanerBase):
         return content
 ```
 
-3. **url_mappings.py** (optional) - URL normalization and file path mapping:
-   - `normalize_mdn_url(url, language)` - Normalize URL format
-   - `get_file_path_from_url(url)` - Map URL to output file path
-   - `build_urls(base_url, language)` - Build dict of known URLs
-
 ### Change Detection
 
 The toolkit uses a multi-level strategy for detecting content changes:
 1. HTTP headers (ETag/Last-Modified) - fast, requires HEAD request only
 2. Content hash (SHA256) - reliable fallback, requires full crawl
 
-State is stored in `sources/<name>/.crawl-state.json` and includes content hashes for each page.
+State is stored in `sources/<name>/.crawl-state.json`.
 
 ## Dependencies
 
